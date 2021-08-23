@@ -1,0 +1,136 @@
+# Instructions for running-
+# 1. On running the script, you will be asked to input the name of the folder of images for blur detection, the exact name should be entered.
+# 2. Make sure that this folder is in the same directory as the script.
+# 3. Lastly, this images folder must contains just the images for blur detection and no other file within it.
+# 4. In the code below The forward slashes may need to be replaced with backward slashes for folders for a windows OS. 
+import cv2
+import os
+import shutil
+from openpyxl import Workbook
+from datetime import datetime
+
+
+def get_laplacian_variance(gray_image):
+    try:
+        lap = cv2.Laplacian(gray_image, cv2.CV_64F)
+        lap_var = lap.var()
+
+        return lap_var
+
+    except Exception as e:
+        print(e)
+
+
+def main():
+    start_date_time = datetime.now()
+    month = start_date_time.month
+
+    if len(str(month)) == 1:
+        month = f"0{month}"
+
+    day = start_date_time.day
+    if len(str(day)) == 1:
+        day = f"0{day}"
+
+    hour = start_date_time.hour
+    if len(str(hour)) == 1:
+        hour = f"0{hour}"
+
+    minute = start_date_time.minute
+    if len(str(minute)) == 1:
+        minute = f"0{minute}"
+
+    file_name = f"{start_date_time.year}{month}{day}__{hour}{minute}__{folder}.xlsx"
+
+    wb = Workbook()
+    worksheet1 = wb.active
+    worksheet1.cell(1, 1, 'Image_name')
+    worksheet1.cell(1, 2, 'Original_path')
+    worksheet1.cell(1, 3, 'New_path')
+    worksheet1.cell(1, 4, 'Date_time')
+
+    recordpos = 2
+
+    dir_name = f"{folder}"
+
+    try:
+        listOfFile = os.listdir(dir_name)
+
+        if os.path.exists(f"{dir_name}/Blur"):
+            pass
+        else:
+            os.mkdir(f"{dir_name}/Blur")
+
+        for _img in listOfFile:
+            try:
+                os.chdir(dir_name)
+
+            except:
+                pass
+
+            try:
+                print("\n")
+                print(_img)
+
+                image = cv2.imread(_img)
+                new_shape = image.shape
+
+                if new_shape[0] < 700 or new_shape[1] < 700:
+                    image = cv2.resize(image, (750, 750))
+
+                if new_shape[0] > 1000 or new_shape[1] > 1000:
+                    image = cv2.resize(image, (1600, 1600))
+
+                gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+                try:
+                    lap_var = get_laplacian_variance(gray_image)
+
+                    if lap_var < float(100):
+                        print("image is blur")
+                        try:
+
+                            source = f"../{dir_name}/{_img}"
+                            destination = f"../{dir_name}/Blur"
+
+                            shutil.move(source, destination)
+
+                            date_time = datetime.now()
+
+                            worksheet1.cell(recordpos, 1, _img)
+                            worksheet1.cell(recordpos, 2, f"/{dir_name}")
+                            worksheet1.cell(recordpos, 3, f"/{dir_name}/Blur")
+                            worksheet1.cell(recordpos, 4, date_time)
+                            wb.save(file_name)
+
+                            recordpos = recordpos + 1
+
+                            print("successfully moved blur image")
+
+                        except Exception as e:
+                            print(e)
+
+                    else:
+                        print("image is not blur")
+
+                except Exception as e:
+                    print(e)
+
+            except Exception as e:
+                print(e)
+
+    except Exception as e:
+        print(e)
+        print("Give correct name of images folder present in the same directory as the script")
+
+
+if __name__ == '__main__':
+    print("script started")
+
+    try:
+        folder = input("Enter name of images folder and press enter\n")
+
+    except Exception as e:
+        print(e)
+
+    main()
